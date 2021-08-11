@@ -18,54 +18,12 @@ namespace HomeWork_17_WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        SqlConnection con;
-        SqlDataAdapter adapter;
-        DataTable clientsTable;
         public MainWindow()
         {
             InitializeComponent();
-            Preparing();
+            gridView.DataContext = MainViewModel.clientsTable.DefaultView;
         }
-        private void Preparing()
-        {
-            #region Init
-            string dataProvider =
-                ConfigurationManager.AppSettings["provider"];
-            string connectionString =
-                ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
 
-            DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
-            using (DbConnection connection = factory.CreateConnection())
-            {
-                if (connection == null)
-                {
-                    ShowError("Connection");
-                    return;
-                }
-                connection.ConnectionString = connectionString;
-                connection.Open();
-
-                con = connection as SqlConnection;
-                if (con == null)
-                {
-                    ShowError("Connection");
-                    return;
-                }
-                adapter = new SqlDataAdapter("SELECT * FROM Clients", con);
-                DataSet ds = new DataSet("bank");
-                //adapter.Fill(ds);
-                clientsTable = new DataTable("Table");
-                ds.Tables.Add(clientsTable);
-                adapter.Fill(ds.Tables["Table"]);
-
-                gridView.DataContext = clientsTable.DefaultView;
-            }
-            #endregion
-        }
-        private static void ShowError(string objectName)
-        {
-            
-        }
 
         /// <summary>
         /// Выполняется при загрузке ListView

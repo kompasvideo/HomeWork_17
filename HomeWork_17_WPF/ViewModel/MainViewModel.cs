@@ -69,14 +69,79 @@ namespace HomeWork_17_WPF.ViewModel
         /// </summary>
         public uint SelectClientDays { get; set; }
 
+        static SqlConnection con;
+        static SqlDataAdapter adapter;
+        public static DataTable clientsTable { get; set; }
+        static DataSet ds;
+
         public MainViewModel()
         {
             if (!isLoad)
             {
                 //AddClientsToBank(3, 3, 3);
+                LoadInDataBase();
                 isLoad = true;
             }
-        }        
+        }
+
+        /// <summary>
+        /// Первоначальная загрузка клиентов из БД
+        /// </summary>
+        private void LoadInDataBase()
+        {
+            #region Init
+            try
+            {
+                string dataProvider =
+                    ConfigurationManager.AppSettings["provider"];
+                string connectionString =
+                    ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
+
+                DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
+                using (DbConnection connection = factory.CreateConnection())
+                {
+                    if (connection == null)
+                    {
+                        MessageBox.Show("Connection");
+                        return;
+                    }
+                    connection.ConnectionString = connectionString;
+                    connection.Open();
+
+                    con = connection as SqlConnection;
+                    if (con == null)
+                    {
+                        MessageBox.Show("Connection");
+                        return;
+                    }
+                    adapter = new SqlDataAdapter("SELECT * FROM Clients", con);
+                    ds = new DataSet("bank");
+                    //adapter.Fill(ds);
+                    clientsTable = new DataTable("Table");
+                    ds.Tables.Add(clientsTable);
+                    adapter.Fill(ds.Tables["Table"]);
+
+                }
+            }
+            catch(SqlException ex)
+            {
+                string errorMessage = "";
+                foreach(SqlError sqlError in ex.Errors)
+                {
+                    errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                    if(sqlError.Number == 18452)
+                    {
+                        MessageBox.Show("Invalid Login Detected");
+                    }
+                }
+                MessageBox.Show(errorMessage);
+            }           
+            finally
+            {
+                con.Close();
+            }
+            #endregion
+        }
 
         /// <summary>
         /// Создаёт клиентов при запуске автоматически
@@ -128,9 +193,6 @@ namespace HomeWork_17_WPF.ViewModel
                         int id;
                         //if (Source != null)
                         //    Source.Filter = new Predicate<object>(MyFilter);
-                        SqlConnection con;
-                        //SqlDataAdapter adapter;
-                        //DataTable clientsTable;
                         string dataProvider = ConfigurationManager.AppSettings["provider"];
                         string connectionString = ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
 
@@ -153,7 +215,6 @@ namespace HomeWork_17_WPF.ViewModel
                             }
                             string objStr = obj as string;
                             string strSql = $"SELECT * FROM Departments WHERE Name=N'{objStr}'";
-                            //string strSql = $"SELECT * FROM Departments WHERE Name=N'Юр. лицо'";
                             SqlCommand sqlCommand = new SqlCommand();
                             sqlCommand.Connection = con;
                             sqlCommand.CommandText = CommandType.Text.ToString();
@@ -161,10 +222,49 @@ namespace HomeWork_17_WPF.ViewModel
                             sqlCommand.Connection.Open();
                             id = (int)sqlCommand.ExecuteScalar();
                         }
+                        using (DbConnection connection = factory.CreateConnection())
+                        {
+                            if (connection == null)
+                            {
+                                MessageBox.Show("Connection");
+                                return;
+                            }
+                            connection.ConnectionString = connectionString;
+                            connection.Open();
+
+                            con = connection as SqlConnection;
+                            if (con == null)
+                            {
+                                MessageBox.Show("Connection");
+                                return;
+                            }
+                            string sqlStr = $"SELECT * FROM Clients WHERE Department={id}";
+                            clientsTable.Clear();
+                            SqlCommand sqlCommand = new SqlCommand();
+                            sqlCommand.Connection = con;
+                            sqlCommand.CommandText = CommandType.Text.ToString();
+                            sqlCommand.CommandText = sqlStr;
+                            adapter.SelectCommand = sqlCommand;
+                            adapter.Fill(ds.Tables["Table"]);
+
+                        }
                     }
-                    catch (Exception) 
+                    catch (SqlException ex)
                     {
-                        MessageBox.Show("Исключение");
+                        string errorMessage = "";
+                        foreach (SqlError sqlError in ex.Errors)
+                        {
+                            errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                            if (sqlError.Number == 18452)
+                            {
+                                MessageBox.Show("Invalid Login Detected");
+                            }
+                        }
+                        MessageBox.Show(errorMessage);
+                    }
+                    finally
+                    {
+                        con.Close();
                     }
                 });
                 return a;
