@@ -1,0 +1,75 @@
+﻿<Window x:Class="HomeWork_17_WPF.View.MoveMoneyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HomeWork_17_WPF.View"
+       xmlns:viewmodels="clr-namespace:HomeWork_17_WPF.ViewModel"
+        mc:Ignorable="d"
+        Title="Перевести между счетами" Height="450" Width="400" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <viewmodels:MainViewModel x:Key="main"/>
+        <viewmodels:MoveMoneyViewModel x:Key="move"/>
+        <CollectionViewSource Source="{Binding Source={StaticResource main}, Path=clients}" x:Key="Cvs"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="45"/>
+            <RowDefinition Height="70"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Перевести деньги на счёт:" Margin="20 5 0 10" Grid.Row="0"/>
+        <ListView ItemsSource="{Binding Source={StaticResource Cvs}}" SelectedItem="{Binding Source={StaticResource move}, Path=SelectedClient}" Margin="20 0 20 0" 
+                  Grid.Row="1">
+            <ListView.DataContext>
+                <Binding Source="{StaticResource main}"/>
+            </ListView.DataContext>
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}"/>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </ListView.GroupStyle>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Клиент">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <TextBlock Text="{Binding Path=Name}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Сумма">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <TextBlock Text="{Binding Path=Money}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView >
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Укажите сумму для перевода:" Margin="20 5 0 0"/>
+            <TextBox Text="{Binding Source={StaticResource move}, Path=MoneyMove}" Margin="20 5 20 0"/>
+        </StackPanel>
+        <Grid Height="30" Margin="0 20"  Grid.Row="3" DataContext="{StaticResource move}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="ОК" Grid.Column="0" Margin="0 5 20 0" VerticalAlignment="Top" Width="75" HorizontalAlignment="Right"
+                     IsDefault="True" Command="{Binding bOK_Click}"/>
+            <Button Content="Отмена" Grid.Column="1" Margin="20 5 0 0" VerticalAlignment="Top" Width="75" HorizontalAlignment="Left"
+                     IsCancel="True" Command="{Binding bCancel_Click}"/>
+        </Grid>
+    </Grid>
+</Window>

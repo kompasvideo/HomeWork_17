@@ -1,0 +1,35 @@
+﻿<Window x:Class="HomeWork_17_WPF.View.RateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HomeWork_17_WPF.View"
+        xmlns:viewmodel="clr-namespace:HomeWork_17_WPF.ViewModel" 
+        mc:Ignorable="d"
+        Title="Расчёт %" Height="300" Width="250"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <viewmodel:RateViewModel x:Key="rate"/>
+    </Window.Resources>
+    <StackPanel>
+        <StackPanel>
+            <StackPanel.DataContext>
+                <Binding Source="{StaticResource rate}"/>
+            </StackPanel.DataContext>
+        </StackPanel>
+        <TextBlock Text="{Binding MoneyRate[0],  StringFormat={}Месяц  1: {0}}" Margin="20 15 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[1],  StringFormat={}Месяц  2: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[2],  StringFormat={}Месяц  3: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[3],  StringFormat={}Месяц  4: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[4],  StringFormat={}Месяц  5: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[5],  StringFormat={}Месяц  6: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[6],  StringFormat={}Месяц  7: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[7],  StringFormat={}Месяц  8: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[8],  StringFormat={}Месяц  9: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[9],  StringFormat={}Месяц 10: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[10], StringFormat={}Месяц 11: {0}}" Margin="20 0 0 0"/>
+        <TextBlock Text="{Binding MoneyRate[11], StringFormat={}Месяц 12: {0}}" Margin="20 0 0 0"/>
+        <Button Content="ОК" Margin="0 20 0 10" VerticalAlignment="Center" Width="75" HorizontalAlignment="Center"
+               IsDefault="True" DataContext="{StaticResource rate}" Command="{Binding bOK_Click}"/>
+    </StackPanel>
+</Window>

@@ -1,0 +1,38 @@
+﻿<Window x:Class="HomeWork_17_WPF.View.AddDepositNoCapitalizeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HomeWork_17_WPF.View"
+        xmlns:viewmodel="clr-namespace:HomeWork_17_WPF.ViewModel" 
+        mc:Ignorable="d"
+        Title="Открыть вклад без капитализации %" Height="380" Width="300"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <viewmodel:AddDepositNoCapitalizeViewModel x:Key="deposit"/>
+    </Window.Resources>
+    <StackPanel>
+        <StackPanel>
+            <StackPanel.DataContext>
+                <Binding Source="{StaticResource deposit}"/>
+            </StackPanel.DataContext>
+        </StackPanel>
+        <TextBlock Text="{Binding DepositV.InterestRate, StringFormat={}Процентная ставка: {0}%}"  Margin="20 10 0 0"/>
+        <TextBlock Text="Дата открытия вклада:" Margin="20 10 0 0"/>
+        <Calendar/>
+        <TextBlock Text="Срок вклада:" Margin="20 10 0 0"/>
+        <TextBox Height="23" TextWrapping="Wrap" Margin="20 5 20 0"
+                 Text="365 дней" IsReadOnly="True"/>
+        <Grid Height="30" Margin="0 20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="ОК" Grid.Column="0" Margin="0 5 20 0" VerticalAlignment="Top" Width="75" HorizontalAlignment="Right"
+                     IsDefault="True" DataContext="{StaticResource deposit}" Command="{Binding bOK_Click}"/>
+            <Button Content="Отмена" Grid.Column="1" Margin="20 5 0 0" VerticalAlignment="Top" Width="75" HorizontalAlignment="Left"
+                     IsCancel="True" DataContext="{StaticResource deposit}" Command="{Binding bCancel_Click}"/>
+        </Grid>
+    </StackPanel>
+</Window>
+
