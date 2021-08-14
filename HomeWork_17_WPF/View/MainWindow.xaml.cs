@@ -26,17 +26,6 @@ namespace HomeWork_17_WPF
 
 
         /// <summary>
-        /// Выполняется при загрузке ListView
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ListView_Loaded(object sender, RoutedEventArgs e)
-        {
-            //MainViewModel.Source = (ListCollectionView)CollectionViewSource.GetDefaultView(LVClients.ItemsSource);
-            //MainViewModel.Source.Filter = new Predicate<object>(MainViewModel.MyFilter);
-        }
-
-        /// <summary>
         /// Подписывается на сообщение ReturnAddClient
         /// </summary>
         /// <param name="sender"></param>
@@ -44,7 +33,7 @@ namespace HomeWork_17_WPF
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Messenger.Default.Register<Client>(MainViewModel.ReturnAddClient);
-            Messenger.Default.Register<Dictionary<Client, uint>>(MainViewModel.ReturnMoveMoney);
+            Messenger.Default.Register<Dictionary<DataRow, int>>(MainViewModel.ReturnMoveMoney);
             Messenger.Default.Register<Deposit>(MainViewModel.ReturnAddDepositNoCapitalize);
             Messenger.Default.Register<DepositPlusCapitalize>(MainViewModel.ReturnAddDepositCapitalize);
             Messenger.Default.Register<BankDepartment>(AddDepositCapitalizeViewModel.SetBankDepartment);
@@ -61,7 +50,7 @@ namespace HomeWork_17_WPF
         private void Window_Unloaded(object sender, RoutedEventArgs e)
         {
             Messenger.Default.Unregister<Client>(MainViewModel.ReturnAddClient);
-            Messenger.Default.Unregister<Dictionary<Client, uint>>(MainViewModel.ReturnMoveMoney);
+            Messenger.Default.Unregister<Dictionary<DataRow, int>>(MainViewModel.ReturnMoveMoney);
             Messenger.Default.Unregister<Deposit>(MainViewModel.ReturnAddDepositNoCapitalize);
             Messenger.Default.Unregister<DepositPlusCapitalize>(MainViewModel.ReturnAddDepositCapitalize);
             Messenger.Default.Unregister<BankDepartment>(AddDepositCapitalizeViewModel.SetBankDepartment);

@@ -66,51 +66,6 @@
         </DockPanel>
         <DockPanel Margin="0 5 0 5">
             <TextBlock Text="Клиенты:" FontWeight="Bold" DockPanel.Dock="Top" Margin="10 0 0 0"/>
-            <!--
-            <ListView ItemsSource="{Binding Source={StaticResource Cvs}}" SelectedItem="{Binding SelectedClient}" 
-                  Loaded="ListView_Loaded" x:Name="LVClients" IsSynchronizedWithCurrentItem="True">
-                <ListView.DataContext>
-                    <Binding Source="{StaticResource main}"/>
-                </ListView.DataContext>
-                <i:Interaction.Triggers>
-                    <i:EventTrigger EventName="SelectionChanged" >
-                        <i:InvokeCommandAction Command="{Binding Source={StaticResource main}, Path=LVSelectedItemChangedCommand, UpdateSourceTrigger=PropertyChanged}"
-                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListView}}, Path=SelectedItem}" />
-                    </i:EventTrigger>
-                </i:Interaction.Triggers>
-                <ListView.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.HeaderTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Name}"/>
-                            </DataTemplate>
-                        </GroupStyle.HeaderTemplate>
-                    </GroupStyle>
-                </ListView.GroupStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="Клиент">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Grid>
-                                        <TextBlock Text="{Binding Path=Name}"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="Сумма">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Grid>
-                                        <TextBlock Text="{Binding Path=Money}"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-            -->
             <DataGrid x:Name="gridView"
                   IsSynchronizedWithCurrentItem="True"
                   SelectionMode="Single" 
@@ -118,7 +73,6 @@
                   ItemsSource="{Binding}"
                   IsReadOnly="False" 
                   >
-
                 <DataGrid.Columns>
                     <DataGridTextColumn x:Name="Name" 
                                     Binding="{Binding Name}" 
@@ -128,6 +82,12 @@
                                     Binding="{Binding Money}" 
                                     Header="Сумма"/>
                 </DataGrid.Columns>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="SelectionChanged" >
+                        <i:InvokeCommandAction Command="{Binding Source={StaticResource main}, Path=LVSelectedItemChangedCommand, UpdateSourceTrigger=PropertyChanged}"
+                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=SelectedItem}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
             </DataGrid>
         </DockPanel>
     </DockPanel>

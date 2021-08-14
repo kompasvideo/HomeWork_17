@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using HomeWork_17_WPF.ViewModel;
+using System.Windows;
 
 namespace HomeWork_17_WPF.View
 {
@@ -10,6 +11,7 @@ namespace HomeWork_17_WPF.View
         public MoveMoneyWindow()
         {
             InitializeComponent();
+            gridView.DataContext = MoveMoneyViewModel.clientsTable.DefaultView;
         }
     }
 }

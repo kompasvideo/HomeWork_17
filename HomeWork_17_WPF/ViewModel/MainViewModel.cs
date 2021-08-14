@@ -73,6 +73,11 @@ namespace HomeWork_17_WPF.ViewModel
         static SqlDataAdapter adapter;
         public static DataTable clientsTable { get; set; }
         static DataSet ds;
+        static DataRow selectDataRow;
+        static Dictionary<string, int> departmentsDB;
+        public static int SelectedClientID { get; set; }
+        public static string SelectedClientName { get; set; }
+        public static int SelectedClientMoney { get; set; }
 
         public MainViewModel()
         {
@@ -89,7 +94,6 @@ namespace HomeWork_17_WPF.ViewModel
         /// </summary>
         private void LoadInDataBase()
         {
-            #region Init
             try
             {
                 string dataProvider =
@@ -99,28 +103,28 @@ namespace HomeWork_17_WPF.ViewModel
 
                 DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
                 using (DbConnection connection = factory.CreateConnection())
-                {
-                    if (connection == null)
-                    {
-                        MessageBox.Show("Connection");
-                        return;
-                    }
+                {                    
                     connection.ConnectionString = connectionString;
                     connection.Open();
 
                     con = connection as SqlConnection;
-                    if (con == null)
-                    {
-                        MessageBox.Show("Connection");
-                        return;
-                    }
                     adapter = new SqlDataAdapter("SELECT * FROM Clients", con);
                     ds = new DataSet("bank");
-                    //adapter.Fill(ds);
                     clientsTable = new DataTable("Table");
                     ds.Tables.Add(clientsTable);
                     adapter.Fill(ds.Tables["Table"]);
 
+                    // Получаем список департаментов из БД
+                    departmentsDB = new Dictionary<string, int>();
+                    string sql = "SELECT * FROM Departments";
+                    SqlCommand sqlCommand = new SqlCommand(sql, con);
+                    using (SqlDataReader sqlDataReader = sqlCommand.ExecuteReader())
+                    {
+                        while(sqlDataReader.Read())
+                        {
+                            departmentsDB.Add((string)sqlDataReader["Name"], (int)sqlDataReader["Id"]);
+                        }
+                    }
                 }
             }
             catch(SqlException ex)
@@ -140,7 +144,6 @@ namespace HomeWork_17_WPF.ViewModel
             {
                 con.Close();
             }
-            #endregion
         }
 
         /// <summary>
@@ -199,20 +202,8 @@ namespace HomeWork_17_WPF.ViewModel
                         DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
                         using (DbConnection connection = factory.CreateConnection())
                         {
-                            if (connection == null)
-                            {
-                                MessageBox.Show("Ошибка Connection");
-                                return;
-                            }
                             connection.ConnectionString = connectionString;
-                            //connection.Open();
-
                             con = connection as SqlConnection;
-                            if (con == null)
-                            {
-                                MessageBox.Show("Ошибка Connection 2");
-                                return;
-                            }
                             string objStr = obj as string;
                             string strSql = $"SELECT * FROM Departments WHERE Name=N'{objStr}'";
                             SqlCommand sqlCommand = new SqlCommand();
@@ -221,28 +212,12 @@ namespace HomeWork_17_WPF.ViewModel
                             sqlCommand.CommandText = strSql;
                             sqlCommand.Connection.Open();
                             id = (int)sqlCommand.ExecuteScalar();
-                        }
-                        using (DbConnection connection = factory.CreateConnection())
-                        {
-                            if (connection == null)
-                            {
-                                MessageBox.Show("Connection");
-                                return;
-                            }
-                            connection.ConnectionString = connectionString;
-                            connection.Open();
-
-                            con = connection as SqlConnection;
-                            if (con == null)
-                            {
-                                MessageBox.Show("Connection");
-                                return;
-                            }
+                            
                             string sqlStr = $"SELECT * FROM Clients WHERE Department={id}";
                             clientsTable.Clear();
-                            SqlCommand sqlCommand = new SqlCommand();
+                            sqlCommand = new SqlCommand();
                             sqlCommand.Connection = con;
-                            sqlCommand.CommandText = CommandType.Text.ToString();
+                            sqlCommand.CommandType = CommandType.Text;
                             sqlCommand.CommandText = sqlStr;
                             adapter.SelectCommand = sqlCommand;
                             adapter.Fill(ds.Tables["Table"]);
@@ -280,25 +255,12 @@ namespace HomeWork_17_WPF.ViewModel
             {
                 var a = new DelegateCommand((obj) =>
                 {
-                    Client client = obj as Client;
-                    if (client != null)
+                    if (obj is DataRowView client)
                     {
-                        SelectClientName = client.Name;
-                        SelectClientMoney = client.Money;
-                        SelectClientType = client.Status;
-                        SelectClientDeposit = client.DepositClientStr;
-                        if (client.DepositClient != null)
-                        {
-                            SelectClientInterestRate = client.DepositClient.InterestRate;
-                            SelectClientDataBegin = client.DepositClient.DateBegin.ToLongDateString();
-                            SelectClientDays = client.DepositClient.Days;
-                        }
-                        else
-                        {
-                            SelectClientInterestRate = 0;
-                            SelectClientDataBegin = "";
-                            SelectClientDays = 0;
-                        }
+                        selectDataRow = client.Row;
+                        SelectedClientID = (int)client[0];
+                        SelectedClientName = (string)client[1];
+                        SelectedClientMoney = (int) client[2];                        
                     }
                 });
                 return a;
@@ -362,8 +324,86 @@ namespace HomeWork_17_WPF.ViewModel
         /// <param name="employee"></param>
         public static void ReturnAddClient(Client client)
         {
-            clients.Add(client);
-            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.AddAccount, $"Открыт счёт для '{client.Name}' на сумму '{client.Money}'"));
+            try
+            {
+                int maxID = 0;
+                foreach(DataRow rows in  clientsTable.Rows)
+                {
+                    int id = (int)rows[0];
+                    if (maxID < id)
+                    {
+                        maxID = id;
+                    }
+                }
+                int ID_department = 0;
+                departmentsDB.TryGetValue(client.Status, out ID_department);
+                DataRow clientRow = clientsTable.NewRow();
+                Object[] rowRecord = new Object[5];
+                rowRecord[0] = maxID + 1;
+                rowRecord[1] = client.Name;
+                rowRecord[2] = client.Money;
+                rowRecord[3] = ID_department;
+                rowRecord[4] = "0";
+                clientRow.ItemArray = rowRecord;
+                clientsTable.Rows.Add(clientRow);
+
+                //Вставляет в таблицу Clients новую строку
+                try
+                {
+                    string dataProvider = ConfigurationManager.AppSettings["provider"];
+                    string connectionString = ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
+
+                    DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
+                    using (DbConnection connection = factory.CreateConnection())
+                    {
+                        connection.ConnectionString = connectionString;
+                        con = connection as SqlConnection;
+                        string strSql = $"Insert Into Clients (Name, Money, Department, Deposit) Values ('{rowRecord[1]}','{rowRecord[2]}','{rowRecord[3]}','{rowRecord[4]}')";
+                        SqlCommand sqlCommand = new SqlCommand();
+                        sqlCommand.Connection = con;
+                        sqlCommand.CommandText = CommandType.Text.ToString();
+                        sqlCommand.CommandText = strSql;
+                        sqlCommand.Connection.Open();
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException ex)
+                {
+                    string errorMessage = "";
+                    foreach (SqlError sqlError in ex.Errors)
+                    {
+                        errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                        if (sqlError.Number == 18452)
+                        {
+                            MessageBox.Show("Invalid Login Detected");
+                        }
+                    }
+                    MessageBox.Show(errorMessage);
+                }
+                finally
+                {
+                    con.Close();
+                }
+
+                Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.AddAccount, $"Открыт счёт для '{client.Name}' на сумму '{client.Money}'"));
+            }
+            catch (SqlException ex)
+            {
+                string errorMessage = "";
+                foreach (SqlError sqlError in ex.Errors)
+                {
+                    errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                    if (sqlError.Number == 18452)
+                    {
+                        MessageBox.Show("Invalid Login Detected");
+                    }
+                }
+                MessageBox.Show(errorMessage);
+            }
+            catch (Exception e) 
+            {
+                MessageBox.Show("Исключение " + e.Message);
+            }
         }
         #endregion
 
@@ -380,16 +420,56 @@ namespace HomeWork_17_WPF.ViewModel
                 {
                     try
                     {
-                        if (SelectedClient == null)
+                        if (SelectedClientID == 0)
                         {
                             throw new NoSelectClientException("Не выбран клиент");
                         }
                         else
                         {
-                            if (MessageBox.Show($"Закрыть счёт для   '{SelectedClient.Name}'", "Закрыть счёт", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                            if (MessageBox.Show($"Закрыть счёт для   '{SelectedClientName}'", "Закрыть счёт", MessageBoxButton.YesNo) == MessageBoxResult.No)
                                 return;
-                            clients.Remove(SelectedClient);
-                            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.CloseAccount, $"Закрыт счёт для '{SelectedClient.Name}' на сумму '{SelectedClient.Money}'"));
+                            //clients.Remove(SelectedClient);
+                            //удалить клиента из таблицы
+                            clientsTable.Rows.Remove(selectDataRow);
+                            
+                            //Удаляет из таблицы Clients строку
+                            try
+                            {
+                                string dataProvider = ConfigurationManager.AppSettings["provider"];
+                                string connectionString = ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
+
+                                DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
+                                using (DbConnection connection = factory.CreateConnection())
+                                {
+                                    connection.ConnectionString = connectionString;
+                                    con = connection as SqlConnection;
+                                    string strSql = $"DELETE FROM Clients WHERE Id='{SelectedClientID}'";
+                                    SqlCommand sqlCommand = new SqlCommand();
+                                    sqlCommand.Connection = con;
+                                    sqlCommand.CommandText = CommandType.Text.ToString();
+                                    sqlCommand.CommandText = strSql;
+                                    sqlCommand.Connection.Open();
+                                    sqlCommand.ExecuteNonQuery();
+                                }
+                            }
+                            catch (SqlException ex)
+                            {
+                                string errorMessage = "";
+                                foreach (SqlError sqlError in ex.Errors)
+                                {
+                                    errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                                    if (sqlError.Number == 18452)
+                                    {
+                                        MessageBox.Show("Invalid Login Detected");
+                                    }
+                                }
+                                MessageBox.Show(errorMessage);
+                            }
+                            finally
+                            {
+                                con.Close();
+                            }
+                            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.CloseAccount, $"Закрыт счёт для '{SelectedClientName}' на сумму '{SelectedClientMoney}'"));
                         }
                     }
                     catch (NoSelectClientException ex)
@@ -415,7 +495,7 @@ namespace HomeWork_17_WPF.ViewModel
                 {
                     try
                     {
-                        if (SelectedClient == null)
+                        if (SelectedClientID == 0)
                         {
                             throw new NoSelectClientException("Не выбран клиент для перевода");
                         }
@@ -441,26 +521,66 @@ namespace HomeWork_17_WPF.ViewModel
         /// Возвращяет Client из диалогового окна MoveMoney
         /// </summary>
         /// <param name="employee"></param>
-        public static void ReturnMoveMoney(Dictionary<Client, uint> client)
+        public static void ReturnMoveMoney(Dictionary<DataRow, int> client)
         {
-            uint moveMoney;
-            Client moveClient;
-            foreach (KeyValuePair<Client, uint> kvp in client)
+            int moveMoney;
+            DataRow moveClient;
+            foreach (KeyValuePair<DataRow, int> kvp in client)
             {
                 moveClient = kvp.Key;
                 moveMoney = kvp.Value;
-                if (SelectedClient.Money >= moveMoney)
+                if ((int)selectDataRow[2] >= moveMoney)
                 {
-                    Client clientMinus = SelectedClient - moveMoney;
-                    Client clientPlus = moveClient + moveMoney;
-                    SelectedClient.Money = clientMinus.Money;
-                    moveClient.Money = clientPlus.Money;
-                    Source.Filter = new Predicate<object>(MyFilter);
-                    Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.MoveMoney, $"Переведена сумма '{moveClient.Money}' с счёта '{SelectedClient.Name}' на счёт '{moveClient.Name}'"));
+                    int client_1_NewMoney = (int)selectDataRow[2] - moveMoney;
+                    int client_2_NewMoney = (int)moveClient[2] + moveMoney;
+                    int client_1_Id = (int)selectDataRow[0];
+                    int client_2_Id = (int)moveClient[0];
+                    selectDataRow[2] = client_1_NewMoney;
+                    moveClient[2] = client_2_NewMoney;
+                    //Обновляет в таблице Clients поле Money
+                    try
+                    {
+                        string dataProvider = ConfigurationManager.AppSettings["provider"];
+                        string connectionString = ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
+
+                        DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
+                        using (DbConnection connection = factory.CreateConnection())
+                        {
+                            connection.ConnectionString = connectionString;
+                            con = connection as SqlConnection;
+                            SqlCommand sqlCommand = new SqlCommand();
+                            sqlCommand.Connection = con;
+                            sqlCommand.CommandText = CommandType.Text.ToString();
+                            sqlCommand.CommandText = $"UPDATE Clients SET Money='{client_1_NewMoney}' WHERE Id='{client_1_Id}'";
+                            sqlCommand.Connection.Open();
+                            sqlCommand.ExecuteNonQuery();
+
+                            sqlCommand.CommandText = $"UPDATE Clients SET Money='{client_2_NewMoney}' WHERE Id='{client_2_Id}'";
+                            sqlCommand.ExecuteNonQuery();
+
+                        }
+                    }
+                    catch (SqlException ex)
+                    {
+                        string errorMessage = "";
+                        foreach (SqlError sqlError in ex.Errors)
+                        {
+                            errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                            if (sqlError.Number == 18452)
+                            {
+                                MessageBox.Show("Invalid Login Detected");
+                            }
+                        }
+                        MessageBox.Show(errorMessage);
+                    }
+                    finally
+                    {
+                        con.Close();
+                    }
                 }
                 else
                 {
-                    MessageBox.Show($"На счёту клиента {SelectedClient} недостаточно средств", "Перевести на другой счёт");
+                    MessageBox.Show($"На счёту клиента '{SelectedClientName} недостаточно средств", "Перевести на другой счёт");
                 }
             }
             //SelectedClient.Money = 
