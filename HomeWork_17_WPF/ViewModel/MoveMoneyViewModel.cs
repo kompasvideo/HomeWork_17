@@ -110,6 +110,7 @@ namespace HomeWork_17_WPF.ViewModel
                     {
                         MessageBox.Show("Не выбран счёт для перевода", "Перевести на другой счёт");
                     }
+                    isLoad = false;
                 });
             }
         }

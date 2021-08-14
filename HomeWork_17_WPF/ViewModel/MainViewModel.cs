@@ -208,7 +208,7 @@ namespace HomeWork_17_WPF.ViewModel
                             string strSql = $"SELECT * FROM Departments WHERE Name=N'{objStr}'";
                             SqlCommand sqlCommand = new SqlCommand();
                             sqlCommand.Connection = con;
-                            sqlCommand.CommandText = CommandType.Text.ToString();
+                            sqlCommand.CommandType = CommandType.Text;
                             sqlCommand.CommandText = strSql;
                             sqlCommand.Connection.Open();
                             id = (int)sqlCommand.ExecuteScalar();
@@ -361,7 +361,7 @@ namespace HomeWork_17_WPF.ViewModel
                         string strSql = $"Insert Into Clients (Name, Money, Department, Deposit) Values ('{rowRecord[1]}','{rowRecord[2]}','{rowRecord[3]}','{rowRecord[4]}')";
                         SqlCommand sqlCommand = new SqlCommand();
                         sqlCommand.Connection = con;
-                        sqlCommand.CommandText = CommandType.Text.ToString();
+                        sqlCommand.CommandType = CommandType.Text;
                         sqlCommand.CommandText = strSql;
                         sqlCommand.Connection.Open();
                         sqlCommand.ExecuteNonQuery();
@@ -446,7 +446,7 @@ namespace HomeWork_17_WPF.ViewModel
                                     string strSql = $"DELETE FROM Clients WHERE Id='{SelectedClientID}'";
                                     SqlCommand sqlCommand = new SqlCommand();
                                     sqlCommand.Connection = con;
-                                    sqlCommand.CommandText = CommandType.Text.ToString();
+                                    sqlCommand.CommandType = CommandType.Text;
                                     sqlCommand.CommandText = strSql;
                                     sqlCommand.Connection.Open();
                                     sqlCommand.ExecuteNonQuery();
@@ -529,14 +529,21 @@ namespace HomeWork_17_WPF.ViewModel
             {
                 moveClient = kvp.Key;
                 moveMoney = kvp.Value;
+                int id = (int)moveClient[0];
+                foreach (DataRow rows in clientsTable.Rows)
+                {
+                    int l_id = (int)rows[0];
+                    if (id == l_id)
+                    {
+                        moveClient = rows;
+                    }
+                }
                 if ((int)selectDataRow[2] >= moveMoney)
                 {
                     int client_1_NewMoney = (int)selectDataRow[2] - moveMoney;
                     int client_2_NewMoney = (int)moveClient[2] + moveMoney;
                     int client_1_Id = (int)selectDataRow[0];
                     int client_2_Id = (int)moveClient[0];
-                    selectDataRow[2] = client_1_NewMoney;
-                    moveClient[2] = client_2_NewMoney;
                     //Обновляет в таблице Clients поле Money
                     try
                     {
@@ -548,16 +555,29 @@ namespace HomeWork_17_WPF.ViewModel
                         {
                             connection.ConnectionString = connectionString;
                             con = connection as SqlConnection;
-                            SqlCommand sqlCommand = new SqlCommand();
-                            sqlCommand.Connection = con;
-                            sqlCommand.CommandText = CommandType.Text.ToString();
-                            sqlCommand.CommandText = $"UPDATE Clients SET Money='{client_1_NewMoney}' WHERE Id='{client_1_Id}'";
-                            sqlCommand.Connection.Open();
-                            sqlCommand.ExecuteNonQuery();
 
-                            sqlCommand.CommandText = $"UPDATE Clients SET Money='{client_2_NewMoney}' WHERE Id='{client_2_Id}'";
-                            sqlCommand.ExecuteNonQuery();
+                            SqlTransaction transaction;
 
+                            SqlCommand sqlCommand1 = new SqlCommand();
+                            sqlCommand1.Connection = con;
+                            sqlCommand1.CommandType = CommandType.Text;
+                            sqlCommand1.CommandText = $"UPDATE Clients SET Money='{client_1_NewMoney}' WHERE Id='{client_1_Id}'";
+                            //sqlCommand1.Connection.Open();
+
+                            SqlCommand sqlCommand2 = new SqlCommand();
+                            sqlCommand2.Connection = con;
+                            sqlCommand2.CommandType = CommandType.Text;
+                            sqlCommand2.CommandText = $"UPDATE Clients SET Money='{client_2_NewMoney}' WHERE Id='{client_2_Id}'";
+                            //sqlCommand2.Connection.Open();
+                            con.Open();
+                            transaction = con.BeginTransaction(IsolationLevel.Serializable);
+                            sqlCommand1.Transaction = transaction;
+                            sqlCommand2.Transaction = transaction;
+                            sqlCommand1.ExecuteNonQuery();
+                            sqlCommand2.ExecuteNonQuery();
+                            transaction.Commit();
+                            selectDataRow[2] = client_1_NewMoney;
+                            moveClient[2] = client_2_NewMoney;
                         }
                     }
                     catch (SqlException ex)
@@ -572,6 +592,10 @@ namespace HomeWork_17_WPF.ViewModel
                             }
                         }
                         MessageBox.Show(errorMessage);
+                    }
+                    catch(Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
                     }
                     finally
                     {
@@ -771,15 +795,6 @@ namespace HomeWork_17_WPF.ViewModel
         #endregion
 
 
-
-
-
-
-
-
-
-
-
         #region Создать Log
         /// <summary>
         /// Создать Log
@@ -792,6 +807,7 @@ namespace HomeWork_17_WPF.ViewModel
             }
         }
         #endregion
+
 
         #region Загрузить Log
         /// <summary>
