@@ -2,6 +2,7 @@
 using DevExpress.Mvvm;
 using System.Windows.Input;
 using HomeWork_17_WPF.Model;
+using System.Data;
 
 namespace HomeWork_17_WPF.ViewModel
 {
@@ -16,12 +17,11 @@ namespace HomeWork_17_WPF.ViewModel
         /// Принимает параметр типа Client
         /// </summary>
         /// <param name="client"></param>
-        public static void SetClient(Dictionary<Client, short> client)
+        public static void SetClient(Dictionary<DataRow, short> client)
         {
-            foreach (KeyValuePair<Client, short> kvp in client)
+            foreach (KeyValuePair<DataRow, short> kvp in client)
             {
-                Client l_client = kvp.Key;
-                //MoneyRate = l_client.DepositClient.GetSumRate(l_client.Money);
+                DataRow l_client = kvp.Key;
                 MoneyRate = l_client.GetSumRateExt();
             }
         }

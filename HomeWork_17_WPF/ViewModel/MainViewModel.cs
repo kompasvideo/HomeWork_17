@@ -22,32 +22,20 @@ namespace HomeWork_17_WPF.ViewModel
         public ObservableCollection<string> departments { get; set; } = new ObservableCollection<string>()
             {Const.personalName, Const.businessName, Const.VIPName};
         /// <summary>
-        /// Список клиентов банка
-        /// </summary>
-        public static ObservableCollection<Client> clients { get; set; } = new ObservableCollection<Client>();
-        Random rnd = new Random();
-        /// <summary>
         /// Выбранный клинт в списке
         /// </summary>
         public static Client SelectedClient { get; set; }
-        /// <summary>
-        /// выбранный департамент в списке
-        /// </summary>
-        public static string SelectedDep { get; set; }
-        /// <summary>
-        /// CollectionViewSource для департаментов
-        /// </summary>
-        public static System.ComponentModel.ICollectionView Source;
         static bool isLoad = false;
 
         /// <summary>
         /// Имя выбранного клиента
         /// </summary>
+        static public string SelectedClientName { get; set; }
         public string SelectClientName { get; set; }
         /// <summary>
         /// Сумма на счёте выбранного клиента
         /// </summary>
-        public uint SelectClientMoney { get; set; }
+        public int SelectClientMoney { get; set; }
         /// <summary>
         /// Тип клиента
         /// </summary>
@@ -59,7 +47,7 @@ namespace HomeWork_17_WPF.ViewModel
         /// <summary>
         /// Ставка по вкладу
         /// </summary>
-        public float SelectClientInterestRate { get; set; }
+        public double SelectClientInterestRate { get; set; }
         /// <summary>
         /// Дата открытия
         /// </summary>
@@ -67,7 +55,7 @@ namespace HomeWork_17_WPF.ViewModel
         /// <summary>
         /// На срок в днях
         /// </summary>
-        public uint SelectClientDays { get; set; }
+        public int SelectClientDays { get; set; }
 
         static SqlConnection con;
         static SqlDataAdapter adapter;
@@ -76,8 +64,6 @@ namespace HomeWork_17_WPF.ViewModel
         static DataRow selectDataRow;
         static Dictionary<string, int> departmentsDB;
         public static int SelectedClientID { get; set; }
-        public static string SelectedClientName { get; set; }
-        public static int SelectedClientMoney { get; set; }
 
         public MainViewModel()
         {
@@ -103,7 +89,7 @@ namespace HomeWork_17_WPF.ViewModel
 
                 DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
                 using (DbConnection connection = factory.CreateConnection())
-                {                    
+                {
                     connection.ConnectionString = connectionString;
                     connection.Open();
 
@@ -120,66 +106,30 @@ namespace HomeWork_17_WPF.ViewModel
                     SqlCommand sqlCommand = new SqlCommand(sql, con);
                     using (SqlDataReader sqlDataReader = sqlCommand.ExecuteReader())
                     {
-                        while(sqlDataReader.Read())
+                        while (sqlDataReader.Read())
                         {
                             departmentsDB.Add((string)sqlDataReader["Name"], (int)sqlDataReader["Id"]);
                         }
                     }
                 }
             }
-            catch(SqlException ex)
+            catch (SqlException ex)
             {
                 string errorMessage = "";
-                foreach(SqlError sqlError in ex.Errors)
+                foreach (SqlError sqlError in ex.Errors)
                 {
                     errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
-                    if(sqlError.Number == 18452)
+                    if (sqlError.Number == 18452)
                     {
                         MessageBox.Show("Invalid Login Detected");
                     }
                 }
                 MessageBox.Show(errorMessage);
-            }           
+            }
             finally
             {
                 con.Close();
             }
-        }
-
-        /// <summary>
-        /// Создаёт клиентов при запуске автоматически
-        /// </summary>
-        /// <param name="personal">Кол-во физ.лиц</param>
-        /// <param name="business">Кол-во юр.лиц</param>
-        /// <param name="vip">Кол-во VIP клиентов</param>
-        void AddClientsToBank(int personal, int business, int vip)
-        {
-            // 
-            for (int i = 0; i < personal; i++)
-            {
-                CreateClientsCollection<PersonalClient>();
-            }
-
-            // 
-            for (int i = 0; i < business; i++)
-            {
-                CreateClientsCollection<BusinessClient>();
-            }
-
-            // 
-            for (int i = 0; i < vip; i++)
-            {
-                CreateClientsCollection<VIPClient>();
-            }
-        }
-
-        /// <summary>
-        /// Добавляет клиентов в список при запуске автоматически
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        void CreateClientsCollection<T>() where T : Client, new()
-        {
-            clients.Add(new T());
         }
 
         /// <summary>
@@ -212,7 +162,7 @@ namespace HomeWork_17_WPF.ViewModel
                             sqlCommand.CommandText = strSql;
                             sqlCommand.Connection.Open();
                             id = (int)sqlCommand.ExecuteScalar();
-                            
+
                             string sqlStr = $"SELECT * FROM Clients WHERE Department={id}";
                             clientsTable.Clear();
                             sqlCommand = new SqlCommand();
@@ -253,50 +203,60 @@ namespace HomeWork_17_WPF.ViewModel
         {
             get
             {
+                int z = new Int32();
                 var a = new DelegateCommand((obj) =>
                 {
-                    if (obj is DataRowView client)
+                    try
                     {
-                        selectDataRow = client.Row;
-                        SelectedClientID = (int)client[0];
-                        SelectedClientName = (string)client[1];
-                        SelectedClientMoney = (int) client[2];                        
+                        if (obj is DataRowView client)
+                        {
+                            selectDataRow = client.Row;
+                            SelectedClientID = (int)client[0];
+                            SelectClientName = SelectedClientName = (string)client[1];
+                            SelectClientMoney = (int)client[2];
+                            switch ((int)client[3])
+                            {
+                                case 1:
+                                    SelectClientType = "Физ. лицо";
+                                    break;
+                                case 2:
+                                    SelectClientType = "Юр. лицо";
+                                    break;
+                                case 3:
+                                    SelectClientType = "VIP";
+                                    break;
+                            }
+                            if ((int)client[4] > 0)
+                            {
+                                switch ((int)client[4])
+                                {
+                                    case 1:
+                                        SelectClientDeposit = "вклад без капитализации %";
+                                        break;
+                                    case 2:
+                                        SelectClientDeposit = "вклад с капитализацией %";
+                                        break;
+                                }
+                                SelectClientInterestRate = (double)client[7];
+                                SelectClientDataBegin = ((DateTime)client[5]).ToShortDateString();
+                                SelectClientDays = (int)client[6];
+                            }
+                            else
+                            {
+                                SelectClientDeposit = " ";
+                                SelectClientInterestRate = 0;
+                                SelectClientDataBegin = " ";
+                                SelectClientDays = 0;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
                     }
                 });
                 return a;
             }
-        }
-
-        /// <summary>
-        /// Фильтр для показа клинтов по департаментам
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public static bool MyFilter(object obj)
-        {
-            var c = obj as Client;
-            if (SelectedDep != null)
-            {
-                switch (SelectedDep)
-                {
-                    case Const.personalName:
-                        if (c.BankDepartmentProp == BankDepartment.PersonalDepartment)
-                            return true;
-                        else
-                            return false;
-                    case Const.businessName:
-                        if (c.BankDepartmentProp == BankDepartment.BusinessDepartment)
-                            return true;
-                        else
-                            return false;
-                    case Const.VIPName:
-                        if (c.BankDepartmentProp == BankDepartment.VIPDepartment)
-                            return true;
-                        else
-                            return false;
-                }
-            }
-            return true;
         }
 
 
@@ -327,7 +287,7 @@ namespace HomeWork_17_WPF.ViewModel
             try
             {
                 int maxID = 0;
-                foreach(DataRow rows in  clientsTable.Rows)
+                foreach (DataRow rows in clientsTable.Rows)
                 {
                     int id = (int)rows[0];
                     if (maxID < id)
@@ -400,7 +360,7 @@ namespace HomeWork_17_WPF.ViewModel
                 }
                 MessageBox.Show(errorMessage);
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
                 MessageBox.Show("Исключение " + e.Message);
             }
@@ -426,12 +386,12 @@ namespace HomeWork_17_WPF.ViewModel
                         }
                         else
                         {
-                            if (MessageBox.Show($"Закрыть счёт для   '{SelectedClientName}'", "Закрыть счёт", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                            if (MessageBox.Show($"Закрыть счёт для   '{SelectClientName}'", "Закрыть счёт", MessageBoxButton.YesNo) == MessageBoxResult.No)
                                 return;
                             //clients.Remove(SelectedClient);
                             //удалить клиента из таблицы
                             clientsTable.Rows.Remove(selectDataRow);
-                            
+
                             //Удаляет из таблицы Clients строку
                             try
                             {
@@ -469,7 +429,7 @@ namespace HomeWork_17_WPF.ViewModel
                             {
                                 con.Close();
                             }
-                            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.CloseAccount, $"Закрыт счёт для '{SelectedClientName}' на сумму '{SelectedClientMoney}'"));
+                            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.CloseAccount, $"Закрыт счёт для '{SelectClientName}' на сумму '{SelectClientMoney}'"));
                         }
                     }
                     catch (NoSelectClientException ex)
@@ -593,7 +553,7 @@ namespace HomeWork_17_WPF.ViewModel
                         }
                         MessageBox.Show(errorMessage);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         MessageBox.Show(ex.Message);
                     }
@@ -623,48 +583,40 @@ namespace HomeWork_17_WPF.ViewModel
                 var a = new DelegateCommand((obj) =>
                 {
                     try
-                    { 
-                        if (SelectedClient == null)
+                    {
+                        if (SelectedClientID == 0)
                         {
                             throw new NoSelectClientException("Не выбран клиент");
                         }
                         else
-                        { 
+                        {
                             var displayRootRegistry = (Application.Current as App).displayRootRegistry;
                             var addDepositNoCapitalizeViewModel = new AddDepositNoCapitalizeViewModel();
                             Dictionary<BankDepartment, uint> bd = new Dictionary<BankDepartment, uint>();
-                            switch (SelectedClient.BankDepartmentProp)
-                        {
-                            case BankDepartment.BusinessDepartment:
-                                bd.Add(BankDepartment.BusinessDepartment, 0);
-                                Messenger.Default.Send(bd);
-                                displayRootRegistry.ShowModalPresentation(addDepositNoCapitalizeViewModel);
-                                break;
-                            case BankDepartment.PersonalDepartment:
-                                bd.Add(BankDepartment.PersonalDepartment, 0);
-                                Messenger.Default.Send(bd);
-                                displayRootRegistry.ShowModalPresentation(addDepositNoCapitalizeViewModel);
-                                break;
-                            case BankDepartment.VIPDepartment:
-                                bd.Add(BankDepartment.VIPDepartment, 0);
-                                Messenger.Default.Send(bd);
-                                displayRootRegistry.ShowModalPresentation(addDepositNoCapitalizeViewModel);
-                                break;
+                            int dep = (int)selectDataRow[3];
+                            switch (dep)
+                            {
+                                case 2:
+                                    bd.Add(BankDepartment.BusinessDepartment, 0);
+                                    Messenger.Default.Send(bd);
+                                    displayRootRegistry.ShowModalPresentation(addDepositNoCapitalizeViewModel);
+                                    break;
+                                case 1:
+                                    bd.Add(BankDepartment.PersonalDepartment, 0);
+                                    Messenger.Default.Send(bd);
+                                    displayRootRegistry.ShowModalPresentation(addDepositNoCapitalizeViewModel);
+                                    break;
+                                case 3:
+                                    bd.Add(BankDepartment.VIPDepartment, 0);
+                                    Messenger.Default.Send(bd);
+                                    displayRootRegistry.ShowModalPresentation(addDepositNoCapitalizeViewModel);
+                                    break;
+                            }
                         }
-                            if (SelectedClient.DepositClient != null)
-                        {
-                            SelectClientDeposit = SelectedClient.DepositClientStr;
-                            SelectClientInterestRate = SelectedClient.DepositClient.InterestRate;
-                            SelectClientDataBegin = SelectedClient.DepositClient.DateBegin.ToLongDateString();
-                            SelectClientDays = SelectedClient.DepositClient.Days;
-                        }
-                        }
-                        //else
-                        //    MessageBox.Show("Не выбран клиент", "Открыть вклад без капитализации %");
                     }
                     catch (NoSelectClientException ex)
                     {
-                        MessageBox.Show(ex.Message, "Перевести на другой счёт");
+                        MessageBox.Show(ex.Message, "Открыть вклад без капитализации %");
                     }
                 });
                 return a;
@@ -677,9 +629,51 @@ namespace HomeWork_17_WPF.ViewModel
         /// <param name="deposit"></param>
         public static void ReturnAddDepositNoCapitalize(Deposit deposit)
         {
-            SelectedClient.DepositClient = deposit;
-            SelectedClient.DepositClientStr = "вклад без капитализации %";
-            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.AddDepositNoCapitalize, $"Открыт вклад без капитализации % для '{SelectedClient.Name}'"));
+            DateTime dateTime = deposit.DateBegin;
+            string date = $"{dateTime.Year}-{dateTime.Month}-{dateTime.Day}";
+            int clientId = SelectedClientID;
+            //Обновляет в таблице Clients поля Deposit, DateOpen, Days, Rate
+            try
+            {
+                string dataProvider = ConfigurationManager.AppSettings["provider"];
+                string connectionString = ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
+
+                DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
+                using (DbConnection connection = factory.CreateConnection())
+                {
+                    connection.ConnectionString = connectionString;
+                    con = connection as SqlConnection;
+                    SqlCommand sqlCommand = new SqlCommand();
+                    sqlCommand.Connection = con;
+                    sqlCommand.CommandType = CommandType.Text;
+                    sqlCommand.CommandText = 
+                        $"UPDATE Clients SET Deposit='1', DateOpen ='{date}', Days='{(int)deposit.Days}', Rate='{(double)deposit.InterestRate}' WHERE Id='{clientId}'";
+                    sqlCommand.Connection.Open();
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+            catch (SqlException ex)
+            {
+                string errorMessage = "";
+                foreach (SqlError sqlError in ex.Errors)
+                {
+                    errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                    if (sqlError.Number == 18452)
+                    {
+                        MessageBox.Show("Invalid Login Detected");
+                    }
+                }
+                MessageBox.Show(errorMessage);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                con.Close();
+            }
+            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.AddDepositNoCapitalize, $"Открыт вклад без капитализации % для '{SelectedClientName}'"));
         }
         #endregion
 
@@ -695,44 +689,36 @@ namespace HomeWork_17_WPF.ViewModel
                 var a = new DelegateCommand((obj) =>
                 {
                     try
-                    { 
-                        if (SelectedClient == null)
+                    {
+                        if (SelectedClientID == 0)
                         {
                             throw new NoSelectClientException("Не выбран клиент");
                         }
                         else
-                        { 
+                        {
                             var displayRootRegistry = (Application.Current as App).displayRootRegistry;
                             var addDepositCapitalizeViewModel = new AddDepositCapitalizeViewModel();
-                            switch (SelectedClient.BankDepartmentProp)
-                        {
-                            case BankDepartment.BusinessDepartment:
-                                Messenger.Default.Send(BankDepartment.BusinessDepartment);
-                                displayRootRegistry.ShowModalPresentation(addDepositCapitalizeViewModel);
-                                break;
-                            case BankDepartment.PersonalDepartment:
-                                Messenger.Default.Send(BankDepartment.PersonalDepartment);
-                                displayRootRegistry.ShowModalPresentation(addDepositCapitalizeViewModel);
-                                break;
-                            case BankDepartment.VIPDepartment:
-                                Messenger.Default.Send(BankDepartment.VIPDepartment);
-                                displayRootRegistry.ShowModalPresentation(addDepositCapitalizeViewModel);
-                                break;
+                            int dep = (int)selectDataRow[3];
+                            switch (dep)
+                            {
+                                case 2:
+                                    Messenger.Default.Send(BankDepartment.BusinessDepartment);
+                                    displayRootRegistry.ShowModalPresentation(addDepositCapitalizeViewModel);
+                                    break;
+                                case 1:
+                                    Messenger.Default.Send(BankDepartment.PersonalDepartment);
+                                    displayRootRegistry.ShowModalPresentation(addDepositCapitalizeViewModel);
+                                    break;
+                                case 3:
+                                    Messenger.Default.Send(BankDepartment.VIPDepartment);
+                                    displayRootRegistry.ShowModalPresentation(addDepositCapitalizeViewModel);
+                                    break;
+                            }                            
                         }
-                            if (SelectedClient.DepositClient != null)
-                        {
-                            SelectClientDeposit = SelectedClient.DepositClientStr;
-                            SelectClientInterestRate = SelectedClient.DepositClient.InterestRate;
-                            SelectClientDataBegin = SelectedClient.DepositClient.DateBegin.ToLongDateString();
-                            SelectClientDays = SelectedClient.DepositClient.Days;
-                        }
-                        }
-                        //else
-                        //    MessageBox.Show("Не выбран клиент", "Открыть вклад с капитализацией %");
                     }
                     catch (NoSelectClientException ex)
                     {
-                        MessageBox.Show(ex.Message, "Перевести на другой счёт");
+                        MessageBox.Show(ex.Message, "Открыть вклад с капитализацией %");
                     }
                 });
                 return a;
@@ -745,10 +731,52 @@ namespace HomeWork_17_WPF.ViewModel
         /// <param name="deposit"></param>
         public static void ReturnAddDepositCapitalize(Deposit deposit)
         {
-            SelectedClient.DepositClient = deposit;
-            SelectedClient.DepositClientStr = "вклад с капитализацией %";
-            //Messenger.Default.Send($"{DateTime.Now} Открыт вклад c капитализацией % для '{SelectedClient.Name}'");
-            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.AddDepositCapitalize, $"Открыт вклад c капитализацией % для '{SelectedClient.Name}'"));
+            DateTime dateTime = deposit.DateBegin;
+            string date = $"{dateTime.Year}-{dateTime.Month}-{dateTime.Day}";
+            int clientId = SelectedClientID;
+            //Обновляет в таблице Clients поля Deposit, DateOpen, Days, Rate
+            try
+            {
+                string dataProvider = ConfigurationManager.AppSettings["provider"];
+                string connectionString = ConfigurationManager.ConnectionStrings["BankSqlProvider"].ConnectionString;
+
+                DbProviderFactory factory = DbProviderFactories.GetFactory(dataProvider);
+                using (DbConnection connection = factory.CreateConnection())
+                {
+                    connection.ConnectionString = connectionString;
+                    con = connection as SqlConnection;
+                    SqlCommand sqlCommand = new SqlCommand();
+                    sqlCommand.Connection = con;
+                    sqlCommand.CommandType = CommandType.Text;
+                    sqlCommand.CommandText =
+                        $"UPDATE Clients SET Deposit='2', DateOpen ='{date}', Days='{(int)deposit.Days}', Rate='{(double)deposit.InterestRate}' WHERE Id='{clientId}'";
+                    sqlCommand.Connection.Open();
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+            catch (SqlException ex)
+            {
+                string errorMessage = "";
+                foreach (SqlError sqlError in ex.Errors)
+                {
+                    errorMessage += sqlError.Message + " (error: " + sqlError.Number.ToString() + ")" + Environment.NewLine;
+                    if (sqlError.Number == 18452)
+                    {
+                        MessageBox.Show("Invalid Login Detected");
+                    }
+                }
+                MessageBox.Show(errorMessage);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                con.Close();
+            }
+
+            Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.AddDepositCapitalize, $"Открыт вклад c капитализацией % для '{SelectedClientName}'"));
         }
         #endregion
 
@@ -763,24 +791,24 @@ namespace HomeWork_17_WPF.ViewModel
             {
                 var a = new DelegateCommand((obj) =>
                 {
-                    try 
-                    { 
-                        if (SelectedClient == null)
+                    try
+                    {
+                        if (SelectedClientID == 0)
                         {
                             throw new NoSelectClientException("Не выбран клиент");
                         }
                         else
-                        { 
-                            if (SelectedClient.DepositClient != null)
+                        {
+                            if ((int)selectDataRow[4] > 0)
                             {
                                 var displayRootRegistry = (Application.Current as App).displayRootRegistry;
 
                                 var rateViewModel = new RateViewModel();
-                                Dictionary<Client, short> client = new Dictionary<Client, short>();
-                                client.Add(SelectedClient, 0);
+                                Dictionary<DataRow, short> client = new Dictionary<DataRow, short>();
+                                client.Add(selectDataRow, 0);
                                 Messenger.Default.Send(client);
                                 displayRootRegistry.ShowModalPresentation(rateViewModel);
-                                Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.RateView, $"Показано окно с расчётом % для '{SelectedClient.Name}'"));
+                                Messenger.Default.Send(new MessageParam(DateTime.Now, MessageType.RateView, $"Показано окно с расчётом % для '{SelectedClientName}'"));
                             }
                         }
                     }
@@ -803,7 +831,7 @@ namespace HomeWork_17_WPF.ViewModel
         {
             get
             {
-                return new DelegateCommand((obj) => SaveMessages.Save());               
+                return new DelegateCommand((obj) => SaveMessages.Save());
             }
         }
         #endregion
@@ -817,7 +845,7 @@ namespace HomeWork_17_WPF.ViewModel
         {
             get
             {
-                return new DelegateCommand(async (obj) => await SaveMessages.Load());                 
+                return new DelegateCommand(async (obj) => await SaveMessages.Load());
             }
         }
         #endregion
